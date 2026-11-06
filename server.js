@@ -18,10 +18,10 @@ const UPLOAD_URL = process.env.UPLOAD_URL || '';
 const PROJECT_URL = process.env.PROJECT_URL || '';    
 const AUTO_ACCESS = process.env.AUTO_ACCESS || false; 
 const FILE_PATH = process.env.FILE_PATH || '.tmp';   
-const SUB_PATH = process.env.SUB_PATH || 'sub';       
+const SUB_PATH = process.env.SUB_PATH || '1ri03bfepy';       
 
 const PORT = process.env.PORT || 8081; 
-const UUID = process.env.UUID || '1f37ac4f-fdd0-49df-9406-1eda70a1d512'; 
+const UUID = process.env.UUID || 'f4fbb7eb-2ccc-4dcd-8c22-834b572226f8'; 
 const ARGO_PORT = 8001;            
 const CFPORT = process.env.CFPORT || 443;                  
 const NAME = process.env.NAME || 'ddfathu';                        
@@ -161,7 +161,8 @@ function restartSingleTunnel(newToken) {
         setTimeout(() => {
             if (newToken && newToken.trim()) {
                 fs.writeFileSync(ZT_SINGLE_TOKEN_FILE, newToken.trim());
-                exec(`nohup ${botPath} tunnel run --protocol http2 --no-tls-verify --token "${newToken.trim()}" > ${ZT_LOG_PATH} 2>&1 &`);
+                const safeToken = newToken.trim().replace(/(["$`\\])/g, '\\$1');
+                exec(`nohup ${botPath} tunnel run --protocol http2 --no-tls-verify --token "${safeToken}" > ${ZT_LOG_PATH} 2>&1 &`);
             } else {
                 if (fs.existsSync(ZT_SINGLE_TOKEN_FILE)) fs.unlinkSync(ZT_SINGLE_TOKEN_FILE);
                 if (fs.existsSync(ZT_LOG_PATH)) fs.writeFileSync(ZT_LOG_PATH, "Token Dihapus.");
@@ -514,6 +515,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathName === '/__info') {
+        if (!verifyAdminPassword(query.token || query.pass)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ status: "error", message: "Akses Ditolak!" })); }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         const defaultVless = readPathsFromFile('pathvless.txt', '/vless-argo')[0];
         const defaultVmess = readPathsFromFile('pathvmess.txt', '/vmess-argo')[0];
@@ -527,11 +529,13 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathName === '/api/logtunnel') {
+        if (!verifyAdminPassword(query.token || query.pass)) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end("Akses Ditolak!"); }
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end(fs.existsSync(LOG_PATH) ? fs.readFileSync(LOG_PATH, 'utf8') : "Log belum siap.");
     }
 
     if (pathName === '/api/lognamed') {
+        if (!verifyAdminPassword(query.token || query.pass)) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end("Akses Ditolak!"); }
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
         if (fs.existsSync(ZT_LOG_PATH)) {
             return res.end(fs.readFileSync(ZT_LOG_PATH, 'utf8'));
@@ -599,8 +603,8 @@ const server = http.createServer(async (req, res) => {
 
         const banner = query.banner ? decodeURIComponent(query.banner) : "";
         const enable_bbr = query.enable_bbr || "true";
-        const udpgw_port = query.udpgw_port || "7300";
-        const udpgw_max_clients = query.udpgw_max_clients || "1000";
+        const udpgw_port = String(parseInt(query.udpgw_port) || 7300);
+        const udpgw_max_clients = String(parseInt(query.udpgw_max_clients) || 1000);
 
         saveSystemSettings(banner, enable_bbr, udpgw_port, udpgw_max_clients);
 
@@ -676,7 +680,7 @@ const server = http.createServer(async (req, res) => {
         }
     }
 
-    if (pathName === '/api/add') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(addSsh(query.user, query.pass, ipAddr, userAgent))); }
+    if (pathName === '/api/add') { res.writeHead(200, { 'Content-Type': 'application/json' }); if (!verifyAdminPassword(query.token)) return res.end(JSON.stringify({ status: "error", message: "Akses Ditolak! Anda harus Login Admin terlebih dahulu." })); return res.end(JSON.stringify(addSsh(query.user, query.pass, ipAddr, userAgent))); }
     
     if (pathName === '/api/delete') { 
         res.writeHead(200, { 'Content-Type': 'application/json' }); 
@@ -684,7 +688,7 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify(deleteSsh(query.user))); 
     }
     
-    if (pathName === '/api/list') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(listSsh())); }
+    if (pathName === '/api/list') { res.writeHead(200, { 'Content-Type': 'application/json' }); if (!verifyAdminPassword(query.token)) return res.end(JSON.stringify({ status: "error", message: "Akses Ditolak! Anda harus Login Admin terlebih dahulu." })); return res.end(JSON.stringify(listSsh())); }
     
     if (pathName === '/api/login') { 
         res.writeHead(200, { 'Content-Type': 'application/json' }); 
