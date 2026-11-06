@@ -408,7 +408,7 @@ async function updateStats() {
 // ========================================================
 async function fetchAccounts() {
     try {
-        let res = await fetch('/api/list'); 
+        let res = await fetch('/api/list?token=' + encodeURIComponent(adminToken)); 
         let data = await res.json(); 
         let tbody = document.getElementById('ssh-table-body'); 
         tbody.innerHTML = "";
@@ -446,7 +446,7 @@ async function createAccount() {
     }
     
     try {
-        let res = await fetch('/api/add?user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass)); 
+        let res = await fetch('/api/add?user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&token=' + encodeURIComponent(adminToken)); 
         let data = await res.json();
         if (data.status === "success") { 
             msg.innerText = ""; 
@@ -654,7 +654,7 @@ function generateSingBoxJson(protocol, targetConnect, selectedPort, uuid, target
 // ========================================================
 async function fetchServerInfo() {
     try {
-        const response = await fetch('/__info');
+        const response = await fetch('/__info?token=' + encodeURIComponent(adminToken));
         if (!response.ok) return;
         const data = await response.json();
         if (data.uuid) document.getElementById('uuidInput').value = data.uuid;
